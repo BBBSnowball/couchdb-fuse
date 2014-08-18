@@ -259,6 +259,7 @@ class CouchFS(fuse.Fuse):
                 elif part == 'value':
                     attr = attr.value
             else:
+                print "part: %r" % part
                 attr = attr[part]
             attrs.append(attr)
             i += 1
@@ -356,7 +357,12 @@ class CouchFS(fuse.Fuse):
 
 def main():
     args = sys.argv[1:]
-    if len(args) not in (2, 3):
+
+    i = 0
+    if args[i] == "-d":
+        i += 1
+
+    if len(args)-i not in (2, 3):
         print "CouchDB FUSE Connector: Allows you to browse the _attachments of"
         print " any CouchDB document on your own filesystem!"
         print
@@ -365,12 +371,14 @@ def main():
         print "Usage: python couchmount.py [-d] <http://hostname:port/db/doc_id> <mount-point>"
         sys.exit(-1)
 
-    if len(args) == 1:
-        fs = CouchFS(args[0])
-    elif len(args) == 2:
-        fs = CouchFSDocument(args[1], args[0])
-    elif len(args) == 3:
-        fs = CouchFSDocument(args[2], args[1])
+    if args[i].startswith("S:"):
+        fs = CouchFS(args[i+1], args[i][2:])
+    elif len(args)-i == 2:
+        fs = CouchFSDocument(args[i+1], args[i])
+    else:
+        raise RuntimeError, "invalid arguments"
+
+    print repr(args)
 
     fs.parse(errex=1)
     fs.main()
