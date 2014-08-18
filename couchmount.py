@@ -21,6 +21,7 @@ try:
 except ImportError:
     import json # Python 2.6
 from urllib import quote, unquote
+import cStringIO
 
 fuse.fuse_python_api = (0, 2)
 
@@ -109,6 +110,8 @@ class CouchFSDocument(fuse.Fuse):
         path = _normalize_path(path)
         try:
             data = self.db.get_attachment(self.db[self.doc_id], path)
+            if isinstance(data, cStringIO.InputType):
+                data = data.getvalue()
             slen = len(data)
             if offset < slen:
                 if offset + size > slen:
@@ -125,6 +128,10 @@ class CouchFSDocument(fuse.Fuse):
         path = _normalize_path(path)
         try:
             data = self.db.get_attachment(self.db[self.doc_id], path)
+            if data is None:
+                data = ""
+            elif isinstance(data, cStringIO.InputType):
+                data = data.getvalue()
             data = data[0:offset] + buf + data[offset+len(buf):]
             self.db.put_attachment(self.db[self.doc_id], data, filename=path)
             return len(buf)
@@ -169,6 +176,8 @@ class CouchFSDocument(fuse.Fuse):
     def rename(self, pathfrom, pathto):
         pathfrom, pathto = _normalize_path(pathfrom), _normalize_path(pathto)
         data = self.db.get_attachment(self.db[self.doc_id], pathfrom)
+        if isinstance(data, cStringIO.InputType):
+            data = data.getvalue()
         self.db.put_attachment(self.db[self.doc_id], data, filename=pathto)
         self.db.delete_attachment(self.db[self.doc_id], pathfrom)
         return 0
